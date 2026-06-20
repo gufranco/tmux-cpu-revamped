@@ -1,5 +1,7 @@
 # tmux-cpu-revamped
 
+[![Tests](https://github.com/gufranco/tmux-cpu-revamped/actions/workflows/tests.yml/badge.svg)](https://github.com/gufranco/tmux-cpu-revamped/actions/workflows/tests.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 CPU load and temperature for your tmux status bar, without ever blocking the
 status render.
 
@@ -74,14 +76,22 @@ next refresh.
 | `@cpu_revamped_temp_high_icon` | empty | icon for the high temperature tier |
 | `@cpu_revamped_enable_logging` | `0` | set to `1` to log diagnostics under `~/.tmux/cpu-revamped-logs` |
 
-## Platform support
+## Support by platform and architecture
 
-| Metric | macOS | Linux |
-|--------|-------|-------|
-| Load | `top` | `/proc/stat` delta |
-| Temperature | `osx-cpu-temp` when installed | `sensors`, then a thermal zone |
+| Metric | Linux (x86_64 and arm64) | macOS Intel | macOS Apple Silicon |
+|--------|--------------------------|-------------|---------------------|
+| CPU load | yes, `/proc/stat` delta | yes, `top` | yes, `top` |
+| CPU temperature | yes, `sensors` or a thermal zone | yes, with `osx-cpu-temp` | no, see note |
 
-When a temperature source is missing the temperature placeholders render empty.
+CPU temperature on Apple Silicon has no sudoless source. `osx-cpu-temp` reads
+Intel SMC keys and returns `0.0` on Apple Silicon, which this plugin treats as no
+reading, so the temperature placeholders stay empty. This was verified on an
+Apple M3 Max. On an Intel Mac install the tool with `brew install osx-cpu-temp`.
+On Linux install `lm-sensors` for `sensors`, or rely on a `/sys/class/thermal`
+zone.
+
+When a temperature source is unavailable the temperature placeholders render
+empty rather than a misleading value.
 
 ## How it stays responsive
 
