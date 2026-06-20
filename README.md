@@ -1,0 +1,104 @@
+# tmux-cpu-revamped
+
+CPU load and temperature for your tmux status bar, without ever blocking the
+status render.
+
+Reading CPU load means sampling over a short interval, which is slow enough to
+stutter a status bar that does it inline. This plugin moves the sampling off the
+render path entirely: the status line reads a value cached in a tmux server
+user-option and returns instantly, while a detached worker re-samples in the
+background. No temp files are involved; all state lives in tmux options.
+
+Inspired by [tmux-cpu](https://github.com/tmux-plugins/tmux-cpu). Built from
+scratch on [tmux-plugin-template](https://github.com/gufranco/tmux-plugin-template).
+
+## Placeholders
+
+Add any of these to `status-left` or `status-right`:
+
+| Placeholder | Output |
+|-------------|--------|
+| `#{cpu_percentage}` | CPU load, for example `42%` |
+| `#{cpu_icon}` | a tier icon for the current load |
+| `#{cpu_fg_color}` | foreground color for the current load tier |
+| `#{cpu_bg_color}` | background color for the current load tier |
+| `#{cpu_temp}` | CPU temperature, for example `54°C` |
+| `#{cpu_temp_icon}` | a tier icon for the current temperature |
+| `#{cpu_temp_fg_color}` | foreground color for the temperature tier |
+| `#{cpu_temp_bg_color}` | background color for the temperature tier |
+
+## Install
+
+With [TPM](https://github.com/tmux-plugins/tpm), add to `~/.tmux.conf`:
+
+```tmux
+set -g @plugin 'gufranco/tmux-cpu-revamped'
+set -g status-right '#{cpu_icon} #{cpu_percentage} #{cpu_temp}'
+```
+
+Then press `prefix + I` to install.
+
+Manual install:
+
+```bash
+git clone https://github.com/gufranco/tmux-cpu-revamped ~/.tmux/plugins/tmux-cpu-revamped
+run-shell ~/.tmux/plugins/tmux-cpu-revamped/cpu-revamped.tmux
+```
+
+## Configuration
+
+Every option is read live, so changing one and reloading tmux takes effect at the
+next refresh.
+
+| Option | Default | Meaning |
+|--------|---------|---------|
+| `@cpu_revamped_interval` | `5` | seconds a sample stays fresh before a background re-sample |
+| `@cpu_revamped_percentage_format` | `%s%%` | printf format for the load value |
+| `@cpu_revamped_medium_thresh` | `30` | load percent at which the tier becomes medium |
+| `@cpu_revamped_high_thresh` | `80` | load percent at which the tier becomes high |
+| `@cpu_revamped_low_icon` | `▰▱▱` | icon for the low tier |
+| `@cpu_revamped_medium_icon` | `▰▰▱` | icon for the medium tier |
+| `@cpu_revamped_high_icon` | `▰▰▰` | icon for the high tier |
+| `@cpu_revamped_low_fg_color` | empty | foreground for the low tier |
+| `@cpu_revamped_medium_fg_color` | empty | foreground for the medium tier |
+| `@cpu_revamped_high_fg_color` | empty | foreground for the high tier |
+| `@cpu_revamped_low_bg_color` | empty | background for the low tier |
+| `@cpu_revamped_medium_bg_color` | empty | background for the medium tier |
+| `@cpu_revamped_high_bg_color` | empty | background for the high tier |
+| `@cpu_revamped_temp_unit` | `C` | `C` or `F` |
+| `@cpu_revamped_temp_format` | `%s°C` | printf format for the temperature value |
+| `@cpu_revamped_temp_medium_thresh` | `65` | degrees Celsius for the medium tier |
+| `@cpu_revamped_temp_high_thresh` | `80` | degrees Celsius for the high tier |
+| `@cpu_revamped_temp_low_icon` | empty | icon for the low temperature tier |
+| `@cpu_revamped_temp_medium_icon` | empty | icon for the medium temperature tier |
+| `@cpu_revamped_temp_high_icon` | empty | icon for the high temperature tier |
+| `@cpu_revamped_enable_logging` | `0` | set to `1` to log diagnostics under `~/.tmux/cpu-revamped-logs` |
+
+## Platform support
+
+| Metric | macOS | Linux |
+|--------|-------|-------|
+| Load | `top` | `/proc/stat` delta |
+| Temperature | `osx-cpu-temp` when installed | `sensors`, then a thermal zone |
+
+When a temperature source is missing the temperature placeholders render empty.
+
+## How it stays responsive
+
+The worker samples load and temperature once and writes them to
+`@cpu_revamped_percent` and `@cpu_revamped_temp`. Every placeholder is a pure
+mapper that reads those cached values. A stampede guard makes sure only one
+worker runs at a time. On a cold start the placeholders are briefly empty until
+the first sample lands, typically on the next status interval.
+
+## Development
+
+```bash
+make test    # bats suite
+make lint    # shellcheck
+make coverage  # kcov line coverage on Linux
+```
+
+## License
+
+[MIT](LICENSE), copyright Gustavo Franco.
