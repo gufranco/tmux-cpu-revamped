@@ -110,6 +110,7 @@ _read_proc_nproc() { grep -c '^processor' /proc/cpuinfo 2>/dev/null; }
 
 # _read_cpu_thermal [GLOB] -> highest cpu-zone temperature in Celsius, empty when
 # none. The GLOB argument exists so tests can point it at a fixture directory.
+# shellcheck disable=SC2120
 _read_cpu_thermal() {
   local glob="${1:-/sys/class/thermal/thermal_zone*/temp}"
   local max="" z type val
@@ -125,6 +126,7 @@ _read_cpu_thermal() {
 }
 
 # _read_coretemp [GLOB] -> highest coretemp hwmon temperature in Celsius.
+# shellcheck disable=SC2120
 _read_coretemp() {
   local glob="${1:-/sys/devices/platform/coretemp.0/hwmon/hwmon*/temp*_input}"
   local max="" h val
