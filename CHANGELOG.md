@@ -5,6 +5,17 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-06-20
+
+### Added
+
+- CPU frequency placeholder `#{cpu_freq}` with a per-chip clock table on Apple
+  Silicon, `sysctl` on Intel macOS, and `/proc/cpuinfo` or scaling on Linux.
+- Load-average placeholder `#{cpu_load}` and CPU-count placeholder `#{cpu_count}`.
+- macOS CPU temperature via `istats` as a fallback to `osx-cpu-temp`.
+- Richer Linux temperature: typed thermal zones, coretemp hwmon, and more
+  `sensors` labels (Tdie, k10temp, CPU Temperature).
+
 ## [1.0.0] - 2026-06-19
 
 ### Added

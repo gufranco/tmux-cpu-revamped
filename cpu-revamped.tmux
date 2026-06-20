@@ -18,6 +18,9 @@ placeholders=(
   "\#{cpu_temp_icon}"
   "\#{cpu_temp_fg_color}"
   "\#{cpu_temp_bg_color}"
+  "\#{cpu_freq}"
+  "\#{cpu_load}"
+  "\#{cpu_count}"
 )
 
 commands=(
@@ -29,6 +32,9 @@ commands=(
   "#(${CPU_CMD} temp_icon)"
   "#(${CPU_CMD} temp_fg_color)"
   "#(${CPU_CMD} temp_bg_color)"
+  "#(${CPU_CMD} freq)"
+  "#(${CPU_CMD} load)"
+  "#(${CPU_CMD} count)"
 )
 
 interpolate() {

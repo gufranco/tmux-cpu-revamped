@@ -34,10 +34,13 @@ cpu_max_age() {
   get_tmux_option "@cpu_revamped_interval" "5"
 }
 
-# cpu_refresh -> the worker: sample load and temperature once, cache both.
+# cpu_refresh -> the worker: sample every metric once and cache it.
 cpu_refresh() {
   cache_set percent "$(read_cpu_percentage)"
   cache_set temp "$(read_cpu_temp)"
+  cache_set freq "$(read_cpu_freq)"
+  cache_set load "$(read_load_average)"
+  cache_set count "$(read_cpu_count)"
 }
 
 # cpu_tick -> trigger a guarded background refresh when the sample is stale.
@@ -64,6 +67,9 @@ main() {
     temp_icon)     cpu_render_temp_icon "$(cache_get temp)" ;;
     temp_fg_color) cpu_render_temp_fg "$(cache_get temp)" ;;
     temp_bg_color) cpu_render_temp_bg "$(cache_get temp)" ;;
+    freq)          cpu_render_freq "$(cache_get freq)" ;;
+    load)          cpu_render_load "$(cache_get load)" ;;
+    count)         cpu_render_count "$(cache_get count)" ;;
     *)             return 0 ;;
   esac
 }

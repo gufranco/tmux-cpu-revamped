@@ -28,6 +28,9 @@ Add any of these to `status-left` or `status-right`:
 | `#{cpu_temp_icon}` | a tier icon for the current temperature |
 | `#{cpu_temp_fg_color}` | foreground color for the temperature tier |
 | `#{cpu_temp_bg_color}` | background color for the temperature tier |
+| `#{cpu_freq}` | CPU clock, for example `4000MHz` |
+| `#{cpu_load}` | 1-minute load average, for example `1.23` |
+| `#{cpu_count}` | number of logical CPUs |
 
 ## Install
 
@@ -74,6 +77,8 @@ next refresh.
 | `@cpu_revamped_temp_low_icon` | empty | icon for the low temperature tier |
 | `@cpu_revamped_temp_medium_icon` | empty | icon for the medium temperature tier |
 | `@cpu_revamped_temp_high_icon` | empty | icon for the high temperature tier |
+| `@cpu_revamped_freq_format` | `%sMHz` | format for the CPU clock |
+| `@cpu_revamped_load_format` | `%s` | format for the load average |
 | `@cpu_revamped_enable_logging` | `0` | set to `1` to log diagnostics under `~/.tmux/cpu-revamped-logs` |
 
 ## Support by platform and architecture
@@ -81,17 +86,20 @@ next refresh.
 | Metric | Linux (x86_64 and arm64) | macOS Intel | macOS Apple Silicon |
 |--------|--------------------------|-------------|---------------------|
 | CPU load | yes, `/proc/stat` delta | yes, `top` | yes, `top` |
-| CPU temperature | yes, `sensors` or a thermal zone | yes, with `osx-cpu-temp` | no, see note |
+| CPU temperature | yes, typed thermal zone, coretemp, then `sensors` | `osx-cpu-temp` or `istats` | `istats` if it reports, else empty |
+| CPU frequency | yes, `/proc/cpuinfo` or scaling | `sysctl` | per-chip clock table |
+| Load average and count | yes | yes | yes |
 
-CPU temperature on Apple Silicon has no sudoless source. `osx-cpu-temp` reads
-Intel SMC keys and returns `0.0` on Apple Silicon, which this plugin treats as no
-reading, so the temperature placeholders stay empty. This was verified on an
-Apple M3 Max. On an Intel Mac install the tool with `brew install osx-cpu-temp`.
-On Linux install `lm-sensors` for `sensors`, or rely on a `/sys/class/thermal`
-zone.
+CPU temperature on Apple Silicon has no sudoless SMC source that is guaranteed to
+work. `osx-cpu-temp` reads Intel SMC keys and returns `0.0` there, so the plugin
+ignores it and falls back to `istats` (`gem install iStats`); if `istats` also
+returns nothing the temperature placeholders stay empty. On an Intel Mac install
+`osx-cpu-temp` with `brew install osx-cpu-temp`. On Linux install `lm-sensors` for
+the `sensors` fallback; typed thermal zones and coretemp need no extra package.
 
-When a temperature source is unavailable the temperature placeholders render
-empty rather than a misleading value.
+Frequency on Apple Silicon is a documented per-chip maximum clock, not a live
+reading, since there is no sudoless live frequency source. Any metric without a
+source on the host renders empty rather than a misleading value.
 
 ## How it stays responsive
 

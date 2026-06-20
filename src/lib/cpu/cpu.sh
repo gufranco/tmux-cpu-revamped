@@ -58,7 +58,7 @@ cpu_pct_from_top() {
 # cpu_temp_from_sensors TEXT -> integer Celsius from `sensors` output.
 cpu_temp_from_sensors() {
   printf '%s\n' "${1}" \
-    | grep -m1 -E 'Tctl|Package id 0|Core 0' \
+    | grep -m1 -E 'Tctl|Tdie|Package id 0|Core 0|CPU Temperature|k10temp' \
     | grep -oE '\+[0-9]+' | head -1 | tr -d '+'
 }
 
@@ -68,13 +68,74 @@ cpu_temp_from_thermal() {
   echo $(( ${1} / 1000 ))
 }
 
+# cpu_temp_from_istats TEXT -> integer Celsius from `istats cpu temp`, empty at 0.
+cpu_temp_from_istats() {
+  local t
+  t=$(printf '%s\n' "${1}" | grep -oE '[0-9]+\.[0-9]+' | head -1)
+  [[ -z "${t}" ]] && t=$(printf '%s\n' "${1}" | grep -oE '[0-9]+' | head -1)
+  [[ "${t}" =~ ^[0-9]+\.?[0-9]*$ ]] || { echo ""; return 0; }
+  local i
+  i=$(awk -v v="${t}" 'BEGIN { printf "%.0f", v }')
+  (( i > 0 )) && echo "${i}"
+}
+
+# cpu_freq_apple BRAND_STRING -> max CPU clock MHz for an Apple Silicon chip.
+cpu_freq_apple() {
+  local gen
+  gen=$(printf '%s' "${1}" | grep -oE 'M[1-5]' | grep -oE '[1-5]' | head -1)
+  [[ "${gen}" =~ ^[1-5]$ ]] || { echo "0"; return 0; }
+  local t=(0 3200 3400 4000 4200 4500)
+  echo "${t[gen]}"
+}
+
+# cpu_freq_from_cpuinfo TEXT -> integer MHz from a "cpu MHz" /proc/cpuinfo line.
+cpu_freq_from_cpuinfo() {
+  printf '%s\n' "${1}" | awk '{print int($NF)}'
+}
+
 # Host-probe seams. Tests override these to inject fixtures.
 _read_proc_cpu_line() { grep -m1 '^cpu ' /proc/stat 2>/dev/null; }
 _read_sensors() { sensors 2>/dev/null; }
-_thermal_available() { [[ -r /sys/class/thermal/thermal_zone0/temp ]]; }
-_read_thermal() { cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null; }
 _read_top() { top -l2 -n0 2>/dev/null; }
 _read_osx_temp() { osx-cpu-temp 2>/dev/null; }
+_read_istats_cpu() { istats cpu temp 2>/dev/null; }
+_read_brand_string() { sysctl -n machdep.cpu.brand_string 2>/dev/null; }
+_read_sysctl_cpufreq() { sysctl -n hw.cpufrequency 2>/dev/null; }
+_read_proc_cpuinfo_mhz() { grep -m1 'cpu MHz' /proc/cpuinfo 2>/dev/null; }
+_read_scaling_cur_freq() { cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq 2>/dev/null; }
+_read_sysctl_loadavg() { sysctl -n vm.loadavg 2>/dev/null; }
+_read_proc_loadavg() { cat /proc/loadavg 2>/dev/null; }
+_read_sysctl_ncpu() { sysctl -n hw.ncpu 2>/dev/null; }
+_read_proc_nproc() { grep -c '^processor' /proc/cpuinfo 2>/dev/null; }
+
+# _read_cpu_thermal [GLOB] -> highest cpu-zone temperature in Celsius, empty when
+# none. The GLOB argument exists so tests can point it at a fixture directory.
+_read_cpu_thermal() {
+  local glob="${1:-/sys/class/thermal/thermal_zone*/temp}"
+  local max="" z type val
+  for z in ${glob}; do
+    [[ -r "${z}" ]] || continue
+    type=$(cat "${z%temp}type" 2>/dev/null)
+    case "${type}" in *cpu*|*x86*|*acpitz*) ;; *) continue ;; esac
+    val=$(awk '{print int($1/1000)}' "${z}" 2>/dev/null)
+    [[ "${val}" =~ ^[0-9]+$ ]] || continue
+    { [[ -z "${max}" ]] || (( val > max )); } && max="${val}"
+  done
+  echo "${max}"
+}
+
+# _read_coretemp [GLOB] -> highest coretemp hwmon temperature in Celsius.
+_read_coretemp() {
+  local glob="${1:-/sys/devices/platform/coretemp.0/hwmon/hwmon*/temp*_input}"
+  local max="" h val
+  for h in ${glob}; do
+    [[ -r "${h}" ]] || continue
+    val=$(awk '{print int($1/1000)}' "${h}" 2>/dev/null)
+    [[ "${val}" =~ ^[0-9]+$ ]] || continue
+    { [[ -z "${max}" ]] || (( val > max )); } && max="${val}"
+  done
+  echo "${max}"
+}
 
 # _sample_proc_cpu -> load percent from two spaced /proc/stat reads.
 _sample_proc_cpu() {
@@ -99,20 +160,62 @@ read_cpu_percentage() {
 # read_cpu_temp -> CPU temperature in Celsius, empty when no sensor is available.
 read_cpu_temp() {
   if is_linux; then
-    if has_command sensors; then
-      cpu_temp_from_sensors "$(_read_sensors)"
-    elif _thermal_available; then
-      cpu_temp_from_thermal "$(_read_thermal)"
-    fi
-  elif is_macos && has_command osx-cpu-temp; then
-    # osx-cpu-temp reads Intel SMC keys and returns 0.0 on Apple Silicon, where
-    # no sudoless CPU temperature source exists. Treat a zero reading as absent.
     local t
-    t=$(_read_osx_temp | grep -oE '[0-9.]+' | head -1)
-    case "${t}" in
-      ""|0|0.0|0.00) ;;
-      *) echo "${t}" ;;
-    esac
+    t=$(_read_cpu_thermal); [[ -n "${t}" ]] && { echo "${t}"; return 0; }
+    t=$(_read_coretemp); [[ -n "${t}" ]] && { echo "${t}"; return 0; }
+    has_command sensors && cpu_temp_from_sensors "$(_read_sensors)"
+  elif is_macos; then
+    local t=""
+    if has_command osx-cpu-temp; then
+      # osx-cpu-temp reads Intel SMC keys and returns 0.0 on Apple Silicon.
+      t=$(_read_osx_temp | grep -oE '[0-9.]+' | head -1)
+      case "${t}" in ""|0|0.0|0.00) t="" ;; esac
+    fi
+    if [[ -z "${t}" ]] && has_command istats; then
+      t=$(cpu_temp_from_istats "$(_read_istats_cpu)")
+    fi
+    [[ -n "${t}" ]] && echo "${t}"
+  fi
+}
+
+# read_cpu_freq -> CPU clock in MHz, empty or 0 when unavailable.
+read_cpu_freq() {
+  if is_apple_silicon; then
+    cpu_freq_apple "$(_read_brand_string)"
+  elif is_macos; then
+    local f
+    f=$(_read_sysctl_cpufreq)
+    [[ "${f}" =~ ^[0-9]+$ ]] && (( f > 0 )) && echo $(( f / 1000000 ))
+  elif is_linux; then
+    local line
+    line=$(_read_proc_cpuinfo_mhz)
+    if [[ -n "${line}" ]]; then
+      cpu_freq_from_cpuinfo "${line}"
+    else
+      local s
+      s=$(_read_scaling_cur_freq)
+      [[ "${s}" =~ ^[0-9]+$ ]] && echo $(( s / 1000 ))
+    fi
+  fi
+}
+
+# read_load_average -> the 1-minute load average.
+read_load_average() {
+  if is_macos; then
+    _read_sysctl_loadavg | awk '{print $2}'
+  elif is_linux; then
+    _read_proc_loadavg | awk '{print $1}'
+  fi
+}
+
+# read_cpu_count -> number of logical CPUs.
+read_cpu_count() {
+  if is_macos; then
+    _read_sysctl_ncpu
+  elif is_linux; then
+    _read_proc_nproc
+  else
+    echo "1"
   fi
 }
 
@@ -121,12 +224,27 @@ export -f cpu_pct_from_stat
 export -f cpu_pct_from_top
 export -f cpu_temp_from_sensors
 export -f cpu_temp_from_thermal
+export -f cpu_temp_from_istats
+export -f cpu_freq_apple
+export -f cpu_freq_from_cpuinfo
 export -f _read_proc_cpu_line
 export -f _read_sensors
-export -f _thermal_available
-export -f _read_thermal
 export -f _read_top
 export -f _read_osx_temp
+export -f _read_istats_cpu
+export -f _read_brand_string
+export -f _read_sysctl_cpufreq
+export -f _read_proc_cpuinfo_mhz
+export -f _read_scaling_cur_freq
+export -f _read_sysctl_loadavg
+export -f _read_proc_loadavg
+export -f _read_sysctl_ncpu
+export -f _read_proc_nproc
+export -f _read_cpu_thermal
+export -f _read_coretemp
 export -f _sample_proc_cpu
 export -f read_cpu_percentage
 export -f read_cpu_temp
+export -f read_cpu_freq
+export -f read_load_average
+export -f read_cpu_count

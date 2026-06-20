@@ -9,6 +9,9 @@ setup() {
   source "${BATS_TEST_DIRNAME}/../../../src/cpu.sh"
   read_cpu_percentage() { echo "77"; }
   read_cpu_temp() { echo "50"; }
+  read_cpu_freq() { echo "4000"; }
+  read_load_average() { echo "1.23"; }
+  read_cpu_count() { echo "12"; }
 }
 
 teardown() {
@@ -31,10 +34,22 @@ teardown() {
   [[ "$(cpu_max_age)" == "10" ]]
 }
 
-@test "cpu.sh dispatcher - cpu_refresh caches load and temperature" {
+@test "cpu.sh dispatcher - cpu_refresh caches every metric" {
   cpu_refresh
   [[ "$(cache_get percent)" == "77" ]]
   [[ "$(cache_get temp)" == "50" ]]
+  [[ "$(cache_get freq)" == "4000" ]]
+  [[ "$(cache_get load)" == "1.23" ]]
+  [[ "$(cache_get count)" == "12" ]]
+}
+
+@test "cpu.sh dispatcher - freq, load, count subcommands render the cache" {
+  run main freq
+  [[ "${output}" == "4000MHz" ]]
+  run main load
+  [[ "${output}" == "1.23" ]]
+  run main count
+  [[ "${output}" == "12" ]]
 }
 
 @test "cpu.sh dispatcher - refresh subcommand caches values" {

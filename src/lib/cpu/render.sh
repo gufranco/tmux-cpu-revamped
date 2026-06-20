@@ -106,6 +106,29 @@ cpu_render_temp_bg() {
   get_tmux_option "@cpu_revamped_temp_$(_cpu_temp_level "${1}")_bg_color" ""
 }
 
+cpu_render_freq() {
+  [[ -z "${1}" || "${1}" == "0" ]] && { echo ""; return 0; }
+  local fmt
+  fmt=$(get_tmux_option "@cpu_revamped_freq_format" "%sMHz")
+  # shellcheck disable=SC2059
+  printf "${fmt}" "${1}"
+}
+
+cpu_render_load() {
+  [[ -z "${1}" ]] && { echo ""; return 0; }
+  local fmt
+  fmt=$(get_tmux_option "@cpu_revamped_load_format" "%s")
+  # shellcheck disable=SC2059
+  printf "${fmt}" "${1}"
+}
+
+cpu_render_count() {
+  echo "${1}"
+}
+
+export -f cpu_render_freq
+export -f cpu_render_load
+export -f cpu_render_count
 export -f _cpu_level
 export -f _cpu_c_to_f
 export -f cpu_render_percentage

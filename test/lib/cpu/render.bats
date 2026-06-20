@@ -107,3 +107,25 @@ teardown() {
 @test "render.sh - cpu_render_temp_fg is empty on cold start" {
   [[ -z "$(cpu_render_temp_fg "")" ]]
 }
+
+@test "render.sh - cpu_render_freq is empty on cold start or zero" {
+  [[ -z "$(cpu_render_freq "")" ]]
+  [[ -z "$(cpu_render_freq 0)" ]]
+}
+
+@test "render.sh - cpu_render_freq formats with default and custom" {
+  [[ "$(cpu_render_freq 4000)" == "4000MHz" ]]
+  set_tmux_option "@cpu_revamped_freq_format" "%s MHz"
+  [[ "$(cpu_render_freq 4000)" == "4000 MHz" ]]
+}
+
+@test "render.sh - cpu_render_load formats with default and custom" {
+  [[ -z "$(cpu_render_load "")" ]]
+  [[ "$(cpu_render_load 1.23)" == "1.23" ]]
+  set_tmux_option "@cpu_revamped_load_format" "load %s"
+  [[ "$(cpu_render_load 1.23)" == "load 1.23" ]]
+}
+
+@test "render.sh - cpu_render_count echoes the value" {
+  [[ "$(cpu_render_count 12)" == "12" ]]
+}

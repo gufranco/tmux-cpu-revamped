@@ -101,25 +101,73 @@ teardown() {
   [[ "$(read_cpu_percentage)" == "0" ]]
 }
 
-@test "cpu.sh - read_cpu_temp reads sensors on Linux" {
+@test "cpu.sh - cpu_temp_from_sensors reads more sensor labels" {
+  [[ "$(cpu_temp_from_sensors 'Tdie: +52.0°C')" == "52" ]]
+  [[ "$(cpu_temp_from_sensors 'CPU Temperature: +47.0°C')" == "47" ]]
+}
+
+@test "cpu.sh - cpu_temp_from_istats rounds and drops zero" {
+  [[ "$(cpu_temp_from_istats 'CPU temp: 45.2 C')" == "45" ]]
+  [[ -z "$(cpu_temp_from_istats 'CPU temp: 0.0 C')" ]]
+}
+
+@test "cpu.sh - cpu_freq_apple looks up the chip clock" {
+  [[ "$(cpu_freq_apple 'Apple M3 Max')" == "4000" ]]
+  [[ "$(cpu_freq_apple 'Apple M1')" == "3200" ]]
+  [[ "$(cpu_freq_apple 'Intel')" == "0" ]]
+}
+
+@test "cpu.sh - cpu_freq_from_cpuinfo parses the MHz field" {
+  [[ "$(cpu_freq_from_cpuinfo 'cpu MHz : 2400.000')" == "2400" ]]
+}
+
+@test "cpu.sh - _read_cpu_thermal reads a typed zone fixture" {
+  mkdir -p "${TEST_TMPDIR}/tz0"
+  echo 60000 > "${TEST_TMPDIR}/tz0/temp"
+  echo "x86_pkg_temp" > "${TEST_TMPDIR}/tz0/type"
+  [[ "$(_read_cpu_thermal "${TEST_TMPDIR}/tz*/temp")" == "60" ]]
+}
+
+@test "cpu.sh - _read_cpu_thermal skips non-cpu zones" {
+  mkdir -p "${TEST_TMPDIR}/tz0"
+  echo 40000 > "${TEST_TMPDIR}/tz0/temp"
+  echo "battery" > "${TEST_TMPDIR}/tz0/type"
+  [[ -z "$(_read_cpu_thermal "${TEST_TMPDIR}/tz*/temp")" ]]
+}
+
+@test "cpu.sh - _read_coretemp reads a hwmon fixture" {
+  mkdir -p "${TEST_TMPDIR}/hw"
+  echo 58000 > "${TEST_TMPDIR}/hw/temp1_input"
+  [[ "$(_read_coretemp "${TEST_TMPDIR}/hw/temp*_input")" == "58" ]]
+}
+
+@test "cpu.sh - read_cpu_temp reads a thermal zone on Linux" {
   _PLATFORM_OS_CACHE="Linux"
+  _read_cpu_thermal() { echo "60"; }
+  [[ "$(read_cpu_temp)" == "60" ]]
+}
+
+@test "cpu.sh - read_cpu_temp falls back to coretemp" {
+  _PLATFORM_OS_CACHE="Linux"
+  _read_cpu_thermal() { echo ""; }
+  _read_coretemp() { echo "58"; }
+  [[ "$(read_cpu_temp)" == "58" ]]
+}
+
+@test "cpu.sh - read_cpu_temp falls back to sensors" {
+  _PLATFORM_OS_CACHE="Linux"
+  _read_cpu_thermal() { echo ""; }
+  _read_coretemp() { echo ""; }
   has_command() { [[ "$1" == "sensors" ]]; }
   _read_sensors() { echo "Core 0: +50.0°C"; }
   [[ "$(read_cpu_temp)" == "50" ]]
 }
 
-@test "cpu.sh - read_cpu_temp falls back to a thermal zone" {
+@test "cpu.sh - read_cpu_temp is empty when Linux has no source" {
   _PLATFORM_OS_CACHE="Linux"
+  _read_cpu_thermal() { echo ""; }
+  _read_coretemp() { echo ""; }
   has_command() { return 1; }
-  _thermal_available() { return 0; }
-  _read_thermal() { echo "55000"; }
-  [[ "$(read_cpu_temp)" == "55" ]]
-}
-
-@test "cpu.sh - read_cpu_temp is empty when Linux has no sensor" {
-  _PLATFORM_OS_CACHE="Linux"
-  has_command() { return 1; }
-  _thermal_available() { return 1; }
   [[ -z "$(read_cpu_temp)" ]]
 }
 
@@ -130,15 +178,90 @@ teardown() {
   [[ "$(read_cpu_temp)" == "61.2" ]]
 }
 
+@test "cpu.sh - read_cpu_temp falls back to istats on Apple Silicon" {
+  _PLATFORM_OS_CACHE="Darwin"
+  has_command() { [[ "$1" == "osx-cpu-temp" || "$1" == "istats" ]]; }
+  _read_osx_temp() { echo "0.0°C"; }
+  _read_istats_cpu() { echo "CPU temp: 48.0 C"; }
+  [[ "$(read_cpu_temp)" == "48" ]]
+}
+
 @test "cpu.sh - read_cpu_temp is empty on macOS without a tool" {
   _PLATFORM_OS_CACHE="Darwin"
   has_command() { return 1; }
   [[ -z "$(read_cpu_temp)" ]]
 }
 
-@test "cpu.sh - read_cpu_temp drops a zero reading on Apple Silicon" {
+@test "cpu.sh - read_cpu_freq uses the Apple Silicon table" {
   _PLATFORM_OS_CACHE="Darwin"
-  has_command() { [[ "$1" == "osx-cpu-temp" ]]; }
-  _read_osx_temp() { echo "0.0°C"; }
-  [[ -z "$(read_cpu_temp)" ]]
+  _PLATFORM_ARCH_CACHE="arm64"
+  _read_brand_string() { echo "Apple M3 Max"; }
+  [[ "$(read_cpu_freq)" == "4000" ]]
+}
+
+@test "cpu.sh - read_cpu_freq reads sysctl on Intel macOS" {
+  _PLATFORM_OS_CACHE="Darwin"
+  _PLATFORM_ARCH_CACHE="x86_64"
+  _read_sysctl_cpufreq() { echo "2400000000"; }
+  [[ "$(read_cpu_freq)" == "2400" ]]
+}
+
+@test "cpu.sh - read_cpu_freq reads cpuinfo on Linux" {
+  _PLATFORM_OS_CACHE="Linux"
+  _read_proc_cpuinfo_mhz() { echo "cpu MHz : 3200.000"; }
+  [[ "$(read_cpu_freq)" == "3200" ]]
+}
+
+@test "cpu.sh - read_cpu_freq falls back to scaling freq on Linux" {
+  _PLATFORM_OS_CACHE="Linux"
+  _read_proc_cpuinfo_mhz() { echo ""; }
+  _read_scaling_cur_freq() { echo "2800000"; }
+  [[ "$(read_cpu_freq)" == "2800" ]]
+}
+
+@test "cpu.sh - read_load_average reads sysctl on macOS" {
+  _PLATFORM_OS_CACHE="Darwin"
+  _read_sysctl_loadavg() { echo "{ 1.23 2.34 3.45 }"; }
+  [[ "$(read_load_average)" == "1.23" ]]
+}
+
+@test "cpu.sh - read_load_average reads /proc on Linux" {
+  _PLATFORM_OS_CACHE="Linux"
+  _read_proc_loadavg() { echo "0.75 0.50 0.30 1/200 1234"; }
+  [[ "$(read_load_average)" == "0.75" ]]
+}
+
+@test "cpu.sh - read_cpu_count reads sysctl on macOS" {
+  _PLATFORM_OS_CACHE="Darwin"
+  _read_sysctl_ncpu() { echo "12"; }
+  [[ "$(read_cpu_count)" == "12" ]]
+}
+
+@test "cpu.sh - read_cpu_count reads /proc on Linux" {
+  _PLATFORM_OS_CACHE="Linux"
+  _read_proc_nproc() { echo "8"; }
+  [[ "$(read_cpu_count)" == "8" ]]
+}
+
+@test "cpu.sh - read_cpu_count is 1 on an unknown platform" {
+  _PLATFORM_OS_CACHE="Plan9"
+  [[ "$(read_cpu_count)" == "1" ]]
+}
+
+@test "cpu.sh - host-probe seams are callable" {
+  run _read_sensors
+  run _read_top
+  run _read_osx_temp
+  run _read_istats_cpu
+  run _read_brand_string
+  run _read_sysctl_cpufreq
+  run _read_proc_cpuinfo_mhz
+  run _read_scaling_cur_freq
+  run _read_sysctl_loadavg
+  run _read_proc_loadavg
+  run _read_sysctl_ncpu
+  run _read_proc_nproc
+  run _read_cpu_thermal
+  run _read_coretemp
+  true
 }
