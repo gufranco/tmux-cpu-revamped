@@ -135,3 +135,10 @@ teardown() {
   has_command() { return 1; }
   [[ -z "$(read_cpu_temp)" ]]
 }
+
+@test "cpu.sh - read_cpu_temp drops a zero reading on Apple Silicon" {
+  _PLATFORM_OS_CACHE="Darwin"
+  has_command() { [[ "$1" == "osx-cpu-temp" ]]; }
+  _read_osx_temp() { echo "0.0°C"; }
+  [[ -z "$(read_cpu_temp)" ]]
+}

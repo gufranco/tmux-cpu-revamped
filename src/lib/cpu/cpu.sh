@@ -105,7 +105,14 @@ read_cpu_temp() {
       cpu_temp_from_thermal "$(_read_thermal)"
     fi
   elif is_macos && has_command osx-cpu-temp; then
-    _read_osx_temp | grep -oE '[0-9.]+' | head -1
+    # osx-cpu-temp reads Intel SMC keys and returns 0.0 on Apple Silicon, where
+    # no sudoless CPU temperature source exists. Treat a zero reading as absent.
+    local t
+    t=$(_read_osx_temp | grep -oE '[0-9.]+' | head -1)
+    case "${t}" in
+      ""|0|0.0|0.00) ;;
+      *) echo "${t}" ;;
+    esac
   fi
 }
 
