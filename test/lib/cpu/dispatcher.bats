@@ -57,6 +57,36 @@ teardown() {
   [[ "${output}" == "50°C" ]]
 }
 
+@test "cpu.sh dispatcher - fg_color maps the cached load" {
+  set_tmux_option "@cpu_revamped_medium_fg_color" "#[fg=yellow]"
+  run main fg_color
+  [[ "${output}" == "#[fg=yellow]" ]]
+}
+
+@test "cpu.sh dispatcher - bg_color maps the cached load" {
+  set_tmux_option "@cpu_revamped_medium_bg_color" "#[bg=yellow]"
+  run main bg_color
+  [[ "${output}" == "#[bg=yellow]" ]]
+}
+
+@test "cpu.sh dispatcher - temp_icon maps the cached temperature" {
+  set_tmux_option "@cpu_revamped_temp_low_icon" "COOL"
+  run main temp_icon
+  [[ "${output}" == "COOL" ]]
+}
+
+@test "cpu.sh dispatcher - temp_fg_color maps the cached temperature" {
+  set_tmux_option "@cpu_revamped_temp_low_fg_color" "#[fg=blue]"
+  run main temp_fg_color
+  [[ "${output}" == "#[fg=blue]" ]]
+}
+
+@test "cpu.sh dispatcher - temp_bg_color maps the cached temperature" {
+  set_tmux_option "@cpu_revamped_temp_low_bg_color" "#[bg=blue]"
+  run main temp_bg_color
+  [[ "${output}" == "#[bg=blue]" ]]
+}
+
 @test "cpu.sh dispatcher - unknown subcommand produces no output" {
   run main bogus
   [[ -z "${output}" ]]
