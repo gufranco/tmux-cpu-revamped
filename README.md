@@ -86,16 +86,17 @@ next refresh.
 | Metric | Linux (x86_64 and arm64) | macOS Intel | macOS Apple Silicon |
 |--------|--------------------------|-------------|---------------------|
 | CPU load | yes, `/proc/stat` delta | yes, `top` | yes, `top` |
-| CPU temperature | yes, typed thermal zone, coretemp, then `sensors` | `osx-cpu-temp` or `istats` | `istats` if it reports, else empty |
+| CPU temperature | yes, typed thermal zone, coretemp, then `sensors` | `osx-cpu-temp` or `istats` | no, see note |
 | CPU frequency | yes, `/proc/cpuinfo` or scaling | `sysctl` | per-chip clock table |
 | Load average and count | yes | yes | yes |
 
-CPU temperature on Apple Silicon has no sudoless SMC source that is guaranteed to
-work. `osx-cpu-temp` reads Intel SMC keys and returns `0.0` there, so the plugin
-ignores it and falls back to `istats` (`gem install iStats`); if `istats` also
-returns nothing the temperature placeholders stay empty. On an Intel Mac install
-`osx-cpu-temp` with `brew install osx-cpu-temp`. On Linux install `lm-sensors` for
-the `sensors` fallback; typed thermal zones and coretemp need no extra package.
+CPU temperature on Apple Silicon has no sudoless source. Both `osx-cpu-temp` and
+`istats` return `0.0` there, validated on an Apple M3 Max, which the plugin treats
+as no reading, so the temperature placeholders stay empty. The `istats` fallback
+helps only Intel Macs, where you install it with `gem install iStats`. On an Intel
+Mac you can also install `osx-cpu-temp` with `brew install osx-cpu-temp`. On Linux
+install `lm-sensors` for the `sensors` fallback; typed thermal zones and coretemp
+need no extra package.
 
 Frequency on Apple Silicon is a documented per-chip maximum clock, not a live
 reading, since there is no sudoless live frequency source. Any metric without a
