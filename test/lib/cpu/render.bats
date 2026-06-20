@@ -72,6 +72,56 @@ teardown() {
   [[ "$(cpu_render_bg 5)" == "#[bg=green]" ]]
 }
 
+@test "render.sh - cpu_render_fg passes a named color through verbatim" {
+  set_tmux_option "@cpu_revamped_high_fg_color" "#[fg=red]"
+  [[ "$(cpu_render_fg 95)" == "#[fg=red]" ]]
+}
+
+@test "render.sh - cpu_render_fg passes a 256-palette color through verbatim" {
+  set_tmux_option "@cpu_revamped_high_fg_color" "#[fg=colour203]"
+  [[ "$(cpu_render_fg 95)" == "#[fg=colour203]" ]]
+}
+
+@test "render.sh - cpu_render_fg passes a hex color through verbatim" {
+  set_tmux_option "@cpu_revamped_high_fg_color" "#[fg=#f38ba8]"
+  [[ "$(cpu_render_fg 95)" == "#[fg=#f38ba8]" ]]
+}
+
+@test "render.sh - cpu_render_fg passes a combined fg and bg spec through verbatim" {
+  set_tmux_option "@cpu_revamped_high_fg_color" "#[fg=#f38ba8,bg=#1e1e2e]"
+  [[ "$(cpu_render_fg 95)" == "#[fg=#f38ba8,bg=#1e1e2e]" ]]
+}
+
+@test "render.sh - cpu_render_fg passes a bright color through verbatim" {
+  set_tmux_option "@cpu_revamped_high_fg_color" "#[fg=brightred]"
+  [[ "$(cpu_render_fg 95)" == "#[fg=brightred]" ]]
+}
+
+@test "render.sh - cpu_render_temp_fg passes a named color through verbatim" {
+  set_tmux_option "@cpu_revamped_temp_high_fg_color" "#[fg=red]"
+  [[ "$(cpu_render_temp_fg 95)" == "#[fg=red]" ]]
+}
+
+@test "render.sh - cpu_render_temp_fg passes a 256-palette color through verbatim" {
+  set_tmux_option "@cpu_revamped_temp_high_fg_color" "#[fg=colour203]"
+  [[ "$(cpu_render_temp_fg 95)" == "#[fg=colour203]" ]]
+}
+
+@test "render.sh - cpu_render_temp_fg passes a hex color through verbatim" {
+  set_tmux_option "@cpu_revamped_temp_high_fg_color" "#[fg=#f38ba8]"
+  [[ "$(cpu_render_temp_fg 95)" == "#[fg=#f38ba8]" ]]
+}
+
+@test "render.sh - cpu_render_temp_fg passes a combined fg and bg spec through verbatim" {
+  set_tmux_option "@cpu_revamped_temp_high_fg_color" "#[fg=#f38ba8,bg=#1e1e2e]"
+  [[ "$(cpu_render_temp_fg 95)" == "#[fg=#f38ba8,bg=#1e1e2e]" ]]
+}
+
+@test "render.sh - cpu_render_temp_fg passes a bright color through verbatim" {
+  set_tmux_option "@cpu_revamped_temp_high_fg_color" "#[fg=brightred]"
+  [[ "$(cpu_render_temp_fg 95)" == "#[fg=brightred]" ]]
+}
+
 @test "render.sh - cpu_render_temp is empty on cold start" {
   [[ -z "$(cpu_render_temp "")" ]]
 }

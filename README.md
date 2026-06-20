@@ -92,6 +92,76 @@ next refresh.
 | `@cpu_revamped_load_format` | `%s` | format for the load average |
 | `@cpu_revamped_enable_logging` | `0` | set to `1` to log diagnostics under `~/.tmux/cpu-revamped-logs` |
 
+## Theme color suggestions
+
+The defaults use the 16 ANSI color names, which the active tmux theme remaps, so the plugin matches any theme out of the box; for exact hex matches copy one block below.
+
+### Catppuccin Mocha
+
+```tmux
+set -g @cpu_revamped_low_fg_color '#[fg=#a6e3a1]'
+set -g @cpu_revamped_medium_fg_color '#[fg=#f9e2af]'
+set -g @cpu_revamped_high_fg_color '#[fg=#f38ba8]'
+set -g @cpu_revamped_temp_low_fg_color '#[fg=#a6e3a1]'
+set -g @cpu_revamped_temp_medium_fg_color '#[fg=#f9e2af]'
+set -g @cpu_revamped_temp_high_fg_color '#[fg=#f38ba8]'
+```
+
+### Dracula
+
+```tmux
+set -g @cpu_revamped_low_fg_color '#[fg=#50fa7b]'
+set -g @cpu_revamped_medium_fg_color '#[fg=#f1fa8c]'
+set -g @cpu_revamped_high_fg_color '#[fg=#ff5555]'
+set -g @cpu_revamped_temp_low_fg_color '#[fg=#50fa7b]'
+set -g @cpu_revamped_temp_medium_fg_color '#[fg=#f1fa8c]'
+set -g @cpu_revamped_temp_high_fg_color '#[fg=#ff5555]'
+```
+
+### Nord
+
+```tmux
+set -g @cpu_revamped_low_fg_color '#[fg=#a3be8c]'
+set -g @cpu_revamped_medium_fg_color '#[fg=#ebcb8b]'
+set -g @cpu_revamped_high_fg_color '#[fg=#bf616a]'
+set -g @cpu_revamped_temp_low_fg_color '#[fg=#a3be8c]'
+set -g @cpu_revamped_temp_medium_fg_color '#[fg=#ebcb8b]'
+set -g @cpu_revamped_temp_high_fg_color '#[fg=#bf616a]'
+```
+
+### Gruvbox Dark
+
+```tmux
+set -g @cpu_revamped_low_fg_color '#[fg=#b8bb26]'
+set -g @cpu_revamped_medium_fg_color '#[fg=#fabd2f]'
+set -g @cpu_revamped_high_fg_color '#[fg=#fb4934]'
+set -g @cpu_revamped_temp_low_fg_color '#[fg=#b8bb26]'
+set -g @cpu_revamped_temp_medium_fg_color '#[fg=#fabd2f]'
+set -g @cpu_revamped_temp_high_fg_color '#[fg=#fb4934]'
+```
+
+### Tokyo Night
+
+```tmux
+set -g @cpu_revamped_low_fg_color '#[fg=#9ece6a]'
+set -g @cpu_revamped_medium_fg_color '#[fg=#e0af68]'
+set -g @cpu_revamped_high_fg_color '#[fg=#f7768e]'
+set -g @cpu_revamped_temp_low_fg_color '#[fg=#9ece6a]'
+set -g @cpu_revamped_temp_medium_fg_color '#[fg=#e0af68]'
+set -g @cpu_revamped_temp_high_fg_color '#[fg=#f7768e]'
+```
+
+### Solarized Dark
+
+```tmux
+set -g @cpu_revamped_low_fg_color '#[fg=#859900]'
+set -g @cpu_revamped_medium_fg_color '#[fg=#b58900]'
+set -g @cpu_revamped_high_fg_color '#[fg=#dc322f]'
+set -g @cpu_revamped_temp_low_fg_color '#[fg=#859900]'
+set -g @cpu_revamped_temp_medium_fg_color '#[fg=#b58900]'
+set -g @cpu_revamped_temp_high_fg_color '#[fg=#dc322f]'
+```
+
 ## Support by platform and architecture
 
 | Metric | Linux (x86_64 and arm64) | macOS Intel | macOS Apple Silicon |
