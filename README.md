@@ -1,18 +1,29 @@
-# tmux-cpu-revamped
+<div align="center">
+
+<h1>tmux-cpu-revamped</h1>
+
+**CPU load, temperature, and frequency in your tmux status bar, without ever blocking the render.**
 
 [![Tests](https://github.com/gufranco/tmux-cpu-revamped/actions/workflows/tests.yml/badge.svg)](https://github.com/gufranco/tmux-cpu-revamped/actions/workflows/tests.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-CPU load and temperature for your tmux status bar, without ever blocking the
-status render.
+</div>
 
-Reading CPU load means sampling over a short interval, which is slow enough to
-stutter a status bar that does it inline. This plugin moves the sampling off the
-render path entirely: the status line reads a value cached in a tmux server
-user-option and returns instantly, while a detached worker re-samples in the
-background. No temp files are involved; all state lives in tmux options.
+**11** placeholders · **2** platforms · **135** tests · **95%+** coverage
 
-Inspired by [tmux-cpu](https://github.com/tmux-plugins/tmux-cpu). Built from
-scratch on [tmux-plugin-template](https://github.com/gufranco/tmux-plugin-template).
+Reading CPU load means sampling over a short interval, slow enough to stutter a status bar that does it inline. This plugin moves the sampling off the render path. The status line reads a value cached in a tmux server user-option and returns instantly, while a detached worker re-samples in the background. No temp files are involved. All state lives in tmux options.
+
+Built from [tmux-plugin-template](https://github.com/gufranco/tmux-plugin-template).
+
+<table>
+<tr>
+<td><strong>Non-blocking</strong><br>The status renders instantly from a cached tmux user-option while a background worker samples.</td>
+<td><strong>No temp files</strong><br>Every piece of state lives in tmux server options, nothing on disk.</td>
+</tr>
+<tr>
+<td><strong>Cross-platform</strong><br>Linux and macOS, Intel and Apple Silicon.</td>
+<td><strong>Tested</strong><br>95%+ line coverage enforced in CI.</td>
+</tr>
+</table>
 
 ## Placeholders
 
@@ -101,14 +112,6 @@ need no extra package.
 Frequency on Apple Silicon is a documented per-chip maximum clock, not a live
 reading, since there is no sudoless live frequency source. Any metric without a
 source on the host renders empty rather than a misleading value.
-
-## How it stays responsive
-
-The worker samples load and temperature once and writes them to
-`@cpu_revamped_percent` and `@cpu_revamped_temp`. Every placeholder is a pure
-mapper that reads those cached values. A stampede guard makes sure only one
-worker runs at a time. On a cold start the placeholders are briefly empty until
-the first sample lands, typically on the next status interval.
 
 ## Development
 
