@@ -88,6 +88,12 @@ next refresh.
 | `@cpu_revamped_temp_low_icon` | empty | icon for the low temperature tier |
 | `@cpu_revamped_temp_medium_icon` | empty | icon for the medium temperature tier |
 | `@cpu_revamped_temp_high_icon` | empty | icon for the high temperature tier |
+| `@cpu_revamped_temp_low_fg_color` | empty | foreground for the low temperature tier |
+| `@cpu_revamped_temp_medium_fg_color` | empty | foreground for the medium temperature tier |
+| `@cpu_revamped_temp_high_fg_color` | empty | foreground for the high temperature tier |
+| `@cpu_revamped_temp_low_bg_color` | empty | background for the low temperature tier |
+| `@cpu_revamped_temp_medium_bg_color` | empty | background for the medium temperature tier |
+| `@cpu_revamped_temp_high_bg_color` | empty | background for the high temperature tier |
 | `@cpu_revamped_freq_format` | `%sMHz` | format for the CPU clock |
 | `@cpu_revamped_load_format` | `%s` | format for the load average |
 | `@cpu_revamped_enable_logging` | `0` | set to `1` to log diagnostics under `~/.tmux/cpu-revamped-logs` |
