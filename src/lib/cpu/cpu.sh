@@ -139,6 +139,34 @@ _read_coretemp() {
   echo "${max}"
 }
 
+# _read_k10temp [GLOB] -> AMD Ryzen k10temp CPU temperature in Celsius read
+# directly from hwmon, preferring the Tctl/Tdie die sensor over board sensors.
+# Closes the Ryzen gap left when lm-sensors is not installed.
+# shellcheck disable=SC2120
+_read_k10temp() {
+  local glob="${1:-/sys/class/hwmon/hwmon*}"
+  local h name inp label val tctl="" best=""
+  for h in ${glob}; do
+    [[ -r "${h}/name" ]] || continue
+    name=$(cat "${h}/name" 2>/dev/null)
+    [[ "${name}" == "k10temp" ]] || continue
+    for inp in "${h}"/temp*_input; do
+      [[ -r "${inp}" ]] || continue
+      val=$(awk '{print int($1/1000)}' "${inp}" 2>/dev/null)
+      [[ "${val}" =~ ^[0-9]+$ ]] || continue
+      label=$(cat "${inp%_input}_label" 2>/dev/null)
+      case "${label}" in
+        Tctl|Tdie)
+          if [[ -z "${tctl}" ]] || (( val > tctl )); then tctl="${val}"; fi ;;
+        *)
+          if [[ -z "${best}" ]] || (( val > best )); then best="${val}"; fi ;;
+      esac
+    done
+  done
+  [[ -n "${tctl}" ]] && { echo "${tctl}"; return 0; }
+  echo "${best}"
+}
+
 # _sample_proc_cpu -> load percent from two spaced /proc/stat reads.
 _sample_proc_cpu() {
   local l1 l2
@@ -165,6 +193,7 @@ read_cpu_temp() {
     local t
     t=$(_read_cpu_thermal); [[ -n "${t}" ]] && { echo "${t}"; return 0; }
     t=$(_read_coretemp); [[ -n "${t}" ]] && { echo "${t}"; return 0; }
+    t=$(_read_k10temp); [[ -n "${t}" ]] && { echo "${t}"; return 0; }
     has_command sensors && cpu_temp_from_sensors "$(_read_sensors)"
   elif is_macos; then
     local t=""
@@ -244,6 +273,7 @@ export -f _read_sysctl_ncpu
 export -f _read_proc_nproc
 export -f _read_cpu_thermal
 export -f _read_coretemp
+export -f _read_k10temp
 export -f _sample_proc_cpu
 export -f read_cpu_percentage
 export -f read_cpu_temp

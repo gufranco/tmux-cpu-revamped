@@ -141,6 +141,31 @@ teardown() {
   [[ "$(_read_coretemp "${TEST_TMPDIR}/hw/temp*_input")" == "58" ]]
 }
 
+@test "cpu.sh - _read_k10temp prefers the Tctl die sensor" {
+  mkdir -p "${TEST_TMPDIR}/hwmon0"
+  echo "k10temp" > "${TEST_TMPDIR}/hwmon0/name"
+  echo 42000 > "${TEST_TMPDIR}/hwmon0/temp1_input"
+  echo "Tctl" > "${TEST_TMPDIR}/hwmon0/temp1_label"
+  echo 38000 > "${TEST_TMPDIR}/hwmon0/temp3_input"
+  echo "Tccd1" > "${TEST_TMPDIR}/hwmon0/temp3_label"
+  [[ "$(_read_k10temp "${TEST_TMPDIR}/hwmon*")" == "42" ]]
+}
+
+@test "cpu.sh - _read_k10temp falls back to the hottest labelled sensor" {
+  mkdir -p "${TEST_TMPDIR}/hwmon0"
+  echo "k10temp" > "${TEST_TMPDIR}/hwmon0/name"
+  echo 49000 > "${TEST_TMPDIR}/hwmon0/temp2_input"
+  echo "Tccd1" > "${TEST_TMPDIR}/hwmon0/temp2_label"
+  [[ "$(_read_k10temp "${TEST_TMPDIR}/hwmon*")" == "49" ]]
+}
+
+@test "cpu.sh - _read_k10temp ignores non-k10temp hwmon" {
+  mkdir -p "${TEST_TMPDIR}/hwmon0"
+  echo "nvme" > "${TEST_TMPDIR}/hwmon0/name"
+  echo 55000 > "${TEST_TMPDIR}/hwmon0/temp1_input"
+  [[ -z "$(_read_k10temp "${TEST_TMPDIR}/hwmon*")" ]]
+}
+
 @test "cpu.sh - read_cpu_temp reads a thermal zone on Linux" {
   _PLATFORM_OS_CACHE="Linux"
   _read_cpu_thermal() { echo "60"; }
@@ -154,10 +179,19 @@ teardown() {
   [[ "$(read_cpu_temp)" == "58" ]]
 }
 
+@test "cpu.sh - read_cpu_temp falls back to k10temp on Ryzen" {
+  _PLATFORM_OS_CACHE="Linux"
+  _read_cpu_thermal() { echo ""; }
+  _read_coretemp() { echo ""; }
+  _read_k10temp() { echo "61"; }
+  [[ "$(read_cpu_temp)" == "61" ]]
+}
+
 @test "cpu.sh - read_cpu_temp falls back to sensors" {
   _PLATFORM_OS_CACHE="Linux"
   _read_cpu_thermal() { echo ""; }
   _read_coretemp() { echo ""; }
+  _read_k10temp() { echo ""; }
   has_command() { [[ "$1" == "sensors" ]]; }
   _read_sensors() { echo "Core 0: +50.0°C"; }
   [[ "$(read_cpu_temp)" == "50" ]]
@@ -167,6 +201,7 @@ teardown() {
   _PLATFORM_OS_CACHE="Linux"
   _read_cpu_thermal() { echo ""; }
   _read_coretemp() { echo ""; }
+  _read_k10temp() { echo ""; }
   has_command() { return 1; }
   [[ -z "$(read_cpu_temp)" ]]
 }

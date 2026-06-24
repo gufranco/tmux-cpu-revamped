@@ -5,6 +5,20 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-06-23
+
+### Added
+
+- AMD Ryzen CPU temperature now reads directly from the `k10temp` hwmon sensor,
+  preferring the Tctl die reading, so the temperature shows up even when
+  `lm-sensors` is not installed.
+
+### Changed
+
+- Reviewed the upstream `tmux-plugins/tmux-cpu` open issues and pull requests.
+  Confirmed the time formatting uses no GNU-only `date` flags (PR #97), and
+  widened the temperature path to cover Ryzen without `sensors` (PR #81).
+
 ## [1.1.0] - 2026-06-20
 
 ### Added
