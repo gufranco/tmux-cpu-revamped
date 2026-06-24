@@ -4,7 +4,7 @@
 
 **CPU load, temperature, and frequency in your tmux status bar, without ever blocking the render.**
 
-[![Tests](https://github.com/gufranco/tmux-cpu-revamped/actions/workflows/tests.yml/badge.svg)](https://github.com/gufranco/tmux-cpu-revamped/actions/workflows/tests.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](CHANGELOG.md)
+[![Tests](https://github.com/tmux-revamped/tmux-cpu-revamped/actions/workflows/tests.yml/badge.svg)](https://github.com/tmux-revamped/tmux-cpu-revamped/actions/workflows/tests.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](CHANGELOG.md)
 
 </div>
 
@@ -12,7 +12,7 @@
 
 Reading CPU load means sampling over a short interval, slow enough to stutter a status bar that does it inline. This plugin moves the sampling off the render path. The status line reads a value cached in a tmux server user-option and returns instantly, while a detached worker re-samples in the background. No temp files are involved. All state lives in tmux options.
 
-Built from [tmux-plugin-template](https://github.com/gufranco/tmux-plugin-template).
+Built from [tmux-plugin-template](https://github.com/tmux-revamped/tmux-plugin-template).
 
 <table>
 <tr>
@@ -48,7 +48,7 @@ Add any of these to `status-left` or `status-right`:
 With [TPM](https://github.com/tmux-plugins/tpm), add to `~/.tmux.conf`:
 
 ```tmux
-set -g @plugin 'gufranco/tmux-cpu-revamped'
+set -g @plugin 'tmux-revamped/tmux-cpu-revamped'
 set -g status-right '#{cpu_icon} #{cpu_percentage} #{cpu_temp}'
 ```
 
@@ -57,7 +57,7 @@ Then press `prefix + I` to install.
 Manual install:
 
 ```bash
-git clone https://github.com/gufranco/tmux-cpu-revamped ~/.tmux/plugins/tmux-cpu-revamped
+git clone https://github.com/tmux-revamped/tmux-cpu-revamped ~/.tmux/plugins/tmux-cpu-revamped
 run-shell ~/.tmux/plugins/tmux-cpu-revamped/cpu-revamped.tmux
 ```
 
