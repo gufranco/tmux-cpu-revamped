@@ -284,6 +284,10 @@ teardown() {
 }
 
 @test "cpu.sh - host-probe seams are callable" {
+  sensors() { :; }
+  top() { :; }
+  osx-cpu-temp() { :; }
+  istats() { :; }
   run _read_sensors
   run _read_top
   run _read_osx_temp
@@ -298,5 +302,75 @@ teardown() {
   run _read_proc_nproc
   run _read_cpu_thermal
   run _read_coretemp
+  true
+}
+
+@test "cpu.sh - cpu_top_from_ps picks the busiest process" {
+  local txt=$'%CPU COMMAND\n 5.0 bash\n12.3 /usr/bin/foo\n 2.0 zsh'
+  [[ "$(cpu_top_from_ps "${txt}")" == "foo 12%" ]]
+}
+
+@test "cpu.sh - cpu_top_from_ps basenames the command" {
+  local txt=$'%CPU COMMAND\n80.0 /opt/app/server'
+  [[ "$(cpu_top_from_ps "${txt}")" == "server 80%" ]]
+}
+
+@test "cpu.sh - cpu_top_from_ps is empty with only a header" {
+  [[ -z "$(cpu_top_from_ps '%CPU COMMAND')" ]]
+}
+
+@test "cpu.sh - read_cpu_top_process reads the ps seam" {
+  _read_ps_cpu() { printf '%s\n' $'%CPU COMMAND\n42.0 node'; }
+  [[ "$(read_cpu_top_process)" == "node 42%" ]]
+}
+
+@test "cpu.sh - read_cpu_governor reads scaling_governor on Linux" {
+  _PLATFORM_OS_CACHE="Linux"
+  _read_scaling_governor() { echo "performance"; }
+  [[ "$(read_cpu_governor)" == "performance" ]]
+}
+
+@test "cpu.sh - read_cpu_governor is empty on macOS" {
+  _PLATFORM_OS_CACHE="Darwin"
+  [[ -z "$(read_cpu_governor)" ]]
+}
+
+@test "cpu.sh - read_load_average5 reads sysctl on macOS" {
+  _PLATFORM_OS_CACHE="Darwin"
+  _read_sysctl_loadavg() { echo "{ 1.23 2.34 3.45 }"; }
+  [[ "$(read_load_average5)" == "2.34" ]]
+}
+
+@test "cpu.sh - read_load_average5 reads /proc on Linux" {
+  _PLATFORM_OS_CACHE="Linux"
+  _read_proc_loadavg() { echo "0.75 0.50 0.30 1/200 1234"; }
+  [[ "$(read_load_average5)" == "0.50" ]]
+}
+
+@test "cpu.sh - read_load_average5 is empty on an unknown platform" {
+  _PLATFORM_OS_CACHE="Plan9"
+  [[ -z "$(read_load_average5)" ]]
+}
+
+@test "cpu.sh - read_load_average15 reads sysctl on macOS" {
+  _PLATFORM_OS_CACHE="Darwin"
+  _read_sysctl_loadavg() { echo "{ 1.23 2.34 3.45 }"; }
+  [[ "$(read_load_average15)" == "3.45" ]]
+}
+
+@test "cpu.sh - read_load_average15 reads /proc on Linux" {
+  _PLATFORM_OS_CACHE="Linux"
+  _read_proc_loadavg() { echo "0.75 0.50 0.30 1/200 1234"; }
+  [[ "$(read_load_average15)" == "0.30" ]]
+}
+
+@test "cpu.sh - read_load_average15 is empty on an unknown platform" {
+  _PLATFORM_OS_CACHE="Plan9"
+  [[ -z "$(read_load_average15)" ]]
+}
+
+@test "cpu.sh - added host-probe seams are callable" {
+  run _read_ps_cpu
+  run _read_scaling_governor
   true
 }

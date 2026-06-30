@@ -5,6 +5,28 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-06-29
+
+### Added
+
+- History sparkline `#{cpu_graph}` driven by a bounded ring buffer kept in a
+  tmux user-option, so load trends show as `▁▂▄▆█` with no temp file.
+- Top CPU process `#{cpu_top_process}`, sampled in the worker, answers what is
+  eating the CPU right now.
+- CPU governor `#{cpu_governor}` on Linux, confirming powersave vs performance.
+- Five and fifteen minute load averages `#{cpu_load5}` and `#{cpu_load15}`
+  alongside the existing one-minute value.
+- Core-relative load color `#{cpu_load_color}`, so the same absolute load reads
+  green on a many-core box and red on a small one.
+- Alert glyph `#{cpu_alert}` that appears when load or temperature crosses its
+  high threshold.
+- Detail popup bound to `prefix + C`, opening btop through a mockable tmux seam,
+  gated on tmux 3.2 with a message fallback on older versions.
+- `doctor` subcommand that reports the platform, popup support, the temperature
+  source, and which optional tools are installed.
+- Optional worker throttle `@cpu_revamped_throttle_when_detached`, which stops
+  resampling when no client is attached.
+
 ## [1.2.0] - 2026-06-23
 
 ### Added

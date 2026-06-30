@@ -4,11 +4,11 @@
 
 **CPU load, temperature, and frequency in your tmux status bar, without ever blocking the render.**
 
-[![Tests](https://github.com/tmux-revamped/tmux-cpu-revamped/actions/workflows/tests.yml/badge.svg)](https://github.com/tmux-revamped/tmux-cpu-revamped/actions/workflows/tests.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](CHANGELOG.md)
+[![Tests](https://github.com/tmux-revamped/tmux-cpu-revamped/actions/workflows/tests.yml/badge.svg)](https://github.com/tmux-revamped/tmux-cpu-revamped/actions/workflows/tests.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](CHANGELOG.md)
 
 </div>
 
-**11** placeholders · **2** platforms · **135** tests · **95%+** coverage
+**18** placeholders · **2** platforms · **224** tests · **95%+** coverage
 
 Reading CPU load means sampling over a short interval, slow enough to stutter a status bar that does it inline. This plugin moves the sampling off the render path. The status line reads a value cached in a tmux server user-option and returns instantly, while a detached worker re-samples in the background. No temp files are involved. All state lives in tmux options.
 
@@ -42,6 +42,14 @@ Add any of these to `status-left` or `status-right`:
 | `#{cpu_freq}` | CPU clock, for example `4000MHz` |
 | `#{cpu_load}` | 1-minute load average, for example `1.23` |
 | `#{cpu_count}` | number of logical CPUs |
+| `#{cpu_load5}` | 5-minute load average |
+| `#{cpu_load15}` | 15-minute load average |
+| `#{cpu_graph}` | history sparkline of recent load, for example `▁▂▄▆█` |
+| `#{cpu_top_process}` | the busiest process by CPU, for example `node 42%` |
+| `#{cpu_governor}` | the Linux CPU frequency governor, for example `performance` |
+| `#{cpu_load_color}` | foreground color for load relative to core count |
+| `#{cpu_alert}` | an alert glyph when load or temperature is high, empty otherwise |
+
 
 ## Install
 
@@ -96,7 +104,38 @@ next refresh.
 | `@cpu_revamped_temp_high_bg_color` | empty | background for the high temperature tier |
 | `@cpu_revamped_freq_format` | `%sMHz` | format for the CPU clock |
 | `@cpu_revamped_load_format` | `%s` | format for the load average |
+| `@cpu_revamped_graph_width` | `20` | number of samples kept in the history ring buffer |
+| `@cpu_revamped_load_medium_ratio` | `0.7` | per-core load ratio at which `#{cpu_load_color}` becomes medium |
+| `@cpu_revamped_load_high_ratio` | `1.0` | per-core load ratio at which `#{cpu_load_color}` becomes high |
+| `@cpu_revamped_alert_icon` | `!` | glyph shown by `#{cpu_alert}` when load or temperature is high |
+| `@cpu_revamped_popup_key` | `C` | `prefix` key that opens the detail popup |
+| `@cpu_revamped_popup_command` | `btop` | command run inside the detail popup |
+| `@cpu_revamped_popup_width` | `80%` | detail popup width |
+| `@cpu_revamped_popup_height` | `80%` | detail popup height |
+| `@cpu_revamped_throttle_when_detached` | `0` | set to `1` to stop resampling when no client is attached |
 | `@cpu_revamped_enable_logging` | `0` | set to `1` to log diagnostics under `~/.tmux/cpu-revamped-logs` |
+
+## Detail popup
+
+Press `prefix + C` to open a detail popup running `btop` (configurable). The popup
+uses tmux `display-popup`, available on tmux 3.2 and newer; on older tmux it shows
+a short message instead. Rebind or repoint it:
+
+```tmux
+set -g @cpu_revamped_popup_key 'C'
+set -g @cpu_revamped_popup_command 'btop'
+```
+
+## Doctor
+
+Run the dispatcher with `doctor` to see why a token may be empty on this host:
+
+```bash
+~/.tmux/plugins/tmux-cpu-revamped/src/cpu.sh doctor
+```
+
+It reports the platform, whether the popup is supported, the temperature source
+that applies here, and which optional tools are installed.
 
 ## Theme color suggestions
 

@@ -179,3 +179,71 @@ teardown() {
 @test "render.sh - cpu_render_count echoes the value" {
   [[ "$(cpu_render_count 12)" == "12" ]]
 }
+
+@test "render.sh - cpu_render_load_color is empty on cold start" {
+  [[ -z "$(cpu_render_load_color "" 8)" ]]
+}
+
+@test "render.sh - cpu_render_load_color picks high when saturated" {
+  set_tmux_option "@cpu_revamped_high_fg_color" "#[fg=red]"
+  [[ "$(cpu_render_load_color 16 8)" == "#[fg=red]" ]]
+}
+
+@test "render.sh - cpu_render_load_color picks medium near capacity" {
+  set_tmux_option "@cpu_revamped_medium_fg_color" "#[fg=yellow]"
+  [[ "$(cpu_render_load_color 6 8)" == "#[fg=yellow]" ]]
+}
+
+@test "render.sh - cpu_render_load_color picks low when idle" {
+  set_tmux_option "@cpu_revamped_low_fg_color" "#[fg=green]"
+  [[ "$(cpu_render_load_color 1 8)" == "#[fg=green]" ]]
+}
+
+@test "render.sh - cpu_render_load_color treats an invalid count as one" {
+  set_tmux_option "@cpu_revamped_high_fg_color" "#[fg=red]"
+  [[ "$(cpu_render_load_color 1.5 xx)" == "#[fg=red]" ]]
+}
+
+@test "render.sh - cpu_render_load_color honors custom ratios" {
+  set_tmux_option "@cpu_revamped_load_medium_ratio" "0.25"
+  set_tmux_option "@cpu_revamped_medium_fg_color" "#[fg=yellow]"
+  [[ "$(cpu_render_load_color 3 8)" == "#[fg=yellow]" ]]
+}
+
+@test "render.sh - cpu_render_alert is empty when calm" {
+  [[ -z "$(cpu_render_alert 10 40)" ]]
+}
+
+@test "render.sh - cpu_render_alert fires on high load" {
+  [[ "$(cpu_render_alert 95 40)" == "!" ]]
+}
+
+@test "render.sh - cpu_render_alert fires on high temperature" {
+  [[ "$(cpu_render_alert 10 90)" == "!" ]]
+}
+
+@test "render.sh - cpu_render_alert honors a custom glyph" {
+  set_tmux_option "@cpu_revamped_alert_icon" "ALERT"
+  [[ "$(cpu_render_alert 95 40)" == "ALERT" ]]
+}
+
+@test "render.sh - cpu_render_alert treats a non-numeric load as zero" {
+  [[ -z "$(cpu_render_alert abc 40)" ]]
+}
+
+@test "render.sh - cpu_render_alert ignores a non-numeric temperature" {
+  [[ -z "$(cpu_render_alert 10 xx)" ]]
+}
+
+@test "render.sh - cpu_render_alert honors custom thresholds" {
+  set_tmux_option "@cpu_revamped_high_thresh" "50"
+  [[ "$(cpu_render_alert 60 40)" == "!" ]]
+}
+
+@test "render.sh - cpu_render_top_process echoes the value" {
+  [[ "$(cpu_render_top_process "node 42%")" == "node 42%" ]]
+}
+
+@test "render.sh - cpu_render_governor echoes the value" {
+  [[ "$(cpu_render_governor "performance")" == "performance" ]]
+}

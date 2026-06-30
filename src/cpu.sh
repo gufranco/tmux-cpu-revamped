@@ -9,7 +9,9 @@
 # Usage:
 #   cpu.sh percentage | icon | fg_color | bg_color
 #   cpu.sh temp | temp_icon | temp_fg_color | temp_bg_color
-#   cpu.sh refresh
+#   cpu.sh freq | load | load5 | load15 | count
+#   cpu.sh graph | top_process | governor | load_color | alert
+#   cpu.sh refresh | popup | doctor | bind
 
 PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
@@ -28,33 +30,65 @@ source "${PLUGIN_DIR}/src/lib/utils/cache.sh"
 source "${PLUGIN_DIR}/src/lib/cpu/cpu.sh"
 # shellcheck source=/dev/null
 source "${PLUGIN_DIR}/src/lib/cpu/render.sh"
+# shellcheck source=/dev/null
+source "${PLUGIN_DIR}/src/lib/cpu/history.sh"
+# shellcheck source=/dev/null
+source "${PLUGIN_DIR}/src/lib/cpu/popup.sh"
+# shellcheck source=/dev/null
+source "${PLUGIN_DIR}/src/lib/cpu/doctor.sh"
 
 # cpu_max_age -> how many seconds a sample stays fresh.
 cpu_max_age() {
   get_tmux_option "@cpu_revamped_interval" "5"
 }
 
+# _cpu_attached_clients -> count of clients attached to this tmux server.
+_cpu_attached_clients() {
+  tmux list-clients 2>/dev/null | wc -l | tr -d ' '
+}
+
+# cpu_should_sample -> 0 when a refresh is allowed. When the throttle option is
+# on and no client is attached, the worker stays idle to save battery.
+cpu_should_sample() {
+  [[ "$(get_tmux_option "@cpu_revamped_throttle_when_detached" "0")" == "1" ]] || return 0
+  local clients
+  clients=$(_cpu_attached_clients)
+  [[ "${clients}" =~ ^[0-9]+$ ]] || return 0
+  (( clients > 0 )) && return 0
+  return 1
+}
+
 # cpu_refresh -> the worker: sample every metric once and cache it.
 cpu_refresh() {
-  cache_set percent "$(read_cpu_percentage)"
+  local percent
+  percent="$(read_cpu_percentage)"
+  cache_set percent "${percent}"
+  cpu_history_push "${percent}" "$(get_tmux_option "@cpu_revamped_graph_width" "20")"
   cache_set temp "$(read_cpu_temp)"
   cache_set freq "$(read_cpu_freq)"
   cache_set load "$(read_load_average)"
+  cache_set load5 "$(read_load_average5)"
+  cache_set load15 "$(read_load_average15)"
   cache_set count "$(read_cpu_count)"
+  cache_set top_process "$(read_cpu_top_process)"
+  cache_set governor "$(read_cpu_governor)"
 }
 
 # cpu_tick -> trigger a guarded background refresh when the sample is stale.
 cpu_tick() {
+  cpu_should_sample || return 0
   cache_refresh_if_stale percent "$(cpu_max_age)" cpu_refresh
 }
 
 main() {
   local cmd="${1:-}"
 
-  if [[ "${cmd}" == "refresh" ]]; then
-    cpu_refresh
-    return 0
-  fi
+  case "${cmd}" in
+    refresh) cpu_refresh; return 0 ;;
+    popup)   cpu_popup_open; return 0 ;;
+    doctor)  cpu_doctor; return 0 ;;
+    bind)    cpu_popup_bind "${PLUGIN_DIR}/src/cpu.sh"; return 0 ;;
+  esac
 
   cpu_tick
 
@@ -69,7 +103,14 @@ main() {
     temp_bg_color) cpu_render_temp_bg "$(cache_get temp)" ;;
     freq)          cpu_render_freq "$(cache_get freq)" ;;
     load)          cpu_render_load "$(cache_get load)" ;;
+    load5)         cpu_render_load "$(cache_get load5)" ;;
+    load15)        cpu_render_load "$(cache_get load15)" ;;
     count)         cpu_render_count "$(cache_get count)" ;;
+    graph)         cpu_render_graph ;;
+    top_process)   cpu_render_top_process "$(cache_get top_process)" ;;
+    governor)      cpu_render_governor "$(cache_get governor)" ;;
+    load_color)    cpu_render_load_color "$(cache_get load)" "$(cache_get count)" ;;
+    alert)         cpu_render_alert "$(cache_get percent)" "$(cache_get temp)" ;;
     *)             return 0 ;;
   esac
 }

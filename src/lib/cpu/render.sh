@@ -126,6 +126,51 @@ cpu_render_count() {
   echo "${1}"
 }
 
+# cpu_render_load_color LOAD COUNT -> the tier fg color for the load relative to
+# core count, so the same absolute load reads green on a big box and red on a
+# small one. Reuses the load tier color options.
+cpu_render_load_color() {
+  local load="${1}" count="${2}"
+  [[ -z "${load}" ]] && { echo ""; return 0; }
+  [[ "${count}" =~ ^[0-9]+$ ]] && (( count > 0 )) || count=1
+  local med high level
+  med=$(get_tmux_option "@cpu_revamped_load_medium_ratio" "0.7")
+  high=$(get_tmux_option "@cpu_revamped_load_high_ratio" "1.0")
+  level=$(awk -v l="${load}" -v c="${count}" -v m="${med}" -v h="${high}" 'BEGIN { r = l / c; if (r >= h) print "high"; else if (r >= m) print "medium"; else print "low" }')
+  get_tmux_option "@cpu_revamped_${level}_fg_color" ""
+}
+
+# cpu_render_alert PERCENT TEMP -> an alert glyph when load or temperature is at
+# or above its high threshold, empty otherwise.
+cpu_render_alert() {
+  local pct="${1}" temp="${2}"
+  local hi thi
+  hi=$(get_tmux_option "@cpu_revamped_high_thresh" "80")
+  thi=$(get_tmux_option "@cpu_revamped_temp_high_thresh" "80")
+  local p="${pct%%.*}" t="${temp%%.*}"
+  [[ "${p}" =~ ^-?[0-9]+$ ]] || p=0
+  local hot=0
+  (( p >= hi )) && hot=1
+  if [[ "${t}" =~ ^-?[0-9]+$ ]] && (( t >= thi )); then
+    hot=1
+  fi
+  if (( hot == 1 )); then
+    get_tmux_option "@cpu_revamped_alert_icon" "!"
+  else
+    echo ""
+  fi
+}
+
+# cpu_render_top_process VALUE -> the cached top-process string verbatim.
+cpu_render_top_process() {
+  echo "${1}"
+}
+
+# cpu_render_governor VALUE -> the cached governor string verbatim.
+cpu_render_governor() {
+  echo "${1}"
+}
+
 export -f cpu_render_freq
 export -f cpu_render_load
 export -f cpu_render_count
@@ -140,3 +185,7 @@ export -f _cpu_temp_level
 export -f cpu_render_temp_icon
 export -f cpu_render_temp_fg
 export -f cpu_render_temp_bg
+export -f cpu_render_load_color
+export -f cpu_render_alert
+export -f cpu_render_top_process
+export -f cpu_render_governor

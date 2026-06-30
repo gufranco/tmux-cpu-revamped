@@ -8,7 +8,7 @@
 _TMUX_PLUGIN_CONSTANTS_LOADED=1
 
 # Version of the shared template these plugins are stamped from.
-readonly CPU_REVAMPED_VERSION="1.2.0"
+readonly CPU_REVAMPED_VERSION="1.3.0"
 
 # Default seconds a cached value stays fresh before a background refresh fires.
 # Plugins override per metric: weather is minutes, cpu is a few seconds.

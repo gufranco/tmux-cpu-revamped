@@ -250,6 +250,46 @@ read_cpu_count() {
   fi
 }
 
+# Host-probe seams for the added metrics.
+_read_ps_cpu() { ps -Ao pcpu,comm 2>/dev/null; }
+_read_scaling_governor() { cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null; }
+
+# cpu_top_from_ps TEXT -> "<name> <pct>%" for the highest %CPU process, empty when
+# the input has no data rows. Pure: parses the text a seam supplies.
+cpu_top_from_ps() {
+  printf '%s\n' "${1}" | awk 'NR > 1 && $1 + 0 > m { m = $1; c = $2 } END { if (c != "") { sub(/.*\//, "", c); printf "%s %d%%", c, m + 0 } }'
+}
+
+# read_cpu_top_process -> the busiest process by CPU. Slow path, worker only.
+read_cpu_top_process() {
+  cpu_top_from_ps "$(_read_ps_cpu)"
+}
+
+# read_cpu_governor -> the Linux CPU frequency governor, empty elsewhere.
+read_cpu_governor() {
+  if is_linux; then
+    _read_scaling_governor
+  fi
+}
+
+# read_load_average5 -> the 5-minute load average.
+read_load_average5() {
+  if is_macos; then
+    _read_sysctl_loadavg | awk '{print $3}'
+  elif is_linux; then
+    _read_proc_loadavg | awk '{print $2}'
+  fi
+}
+
+# read_load_average15 -> the 15-minute load average.
+read_load_average15() {
+  if is_macos; then
+    _read_sysctl_loadavg | awk '{print $4}'
+  elif is_linux; then
+    _read_proc_loadavg | awk '{print $3}'
+  fi
+}
+
 export -f _cpu_stat_total_idle
 export -f cpu_pct_from_stat
 export -f cpu_pct_from_top
@@ -280,3 +320,10 @@ export -f read_cpu_temp
 export -f read_cpu_freq
 export -f read_load_average
 export -f read_cpu_count
+export -f _read_ps_cpu
+export -f _read_scaling_governor
+export -f cpu_top_from_ps
+export -f read_cpu_top_process
+export -f read_cpu_governor
+export -f read_load_average5
+export -f read_load_average15
